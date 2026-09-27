@@ -1,0 +1,32 @@
+# colinhacks/zod's test.yml: test-node (ubuntu-latest, Node lts/*, TypeScript latest), for the Superaction scoreboard.
+name: Superaction (GitHub)
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test / github
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - run: printf '%s\n' "lts/*" > .nvmrc
+      - uses: nubjs/setup-nub@47e5e7393d50f4e9544ddaf756aa277972afba2d # v0
+        with:
+          nub-version: "0.8.3"
+          node-version: "lts/*"
+      - run: nub install --frozen-lockfile
+      # Build with the repo-pinned TypeScript: zshy uses the classic compiler API,
+      # which TypeScript 7 no longer ships. The matrix version applies to the tests.
+      - run: nub run build
+      - run: nub add typescript@latest -Dw
+      - run: nub run test
+      # Upstream skips `nub run --filter @zod/resolution test:all` when typescript == latest.
+      - run: nub run --filter @zod/integration test:all
